@@ -1,71 +1,71 @@
 export const getOne = model => async (req, res) => {
-  try {
-    const modelInstance = await model.findById(req.id).exec()
+  const id = req.params.id
+  const userId = req.user._id
 
-    if (!modelInstance) {
-      res.status(400)
-    }
+  const doc = await model.findOne({ _id: id, createdBy: userId })
 
-    res.status(200).send(modelInstance)
-  } catch (error) {
-    req.status(400)
+  if (!doc) {
+    return res.status(404).end()
   }
+
+  return res.status(200).json({ data: doc })
 }
 
 export const getMany = model => async (req, res) => {
-  try {
-    const modelInstance = await model.find().exec()
-    res.status(200).send(modelInstance)
-  } catch (error) {
-    res.status(400).send({
-      msg: 'Error occured while getMany',
-      error
-    })
+  const userId = req.user._id
+  const docs = await model.find({ createdBy: userId })
+
+  if (!docs) {
+    return res.status(404).end()
   }
+
+  return res.status(200).json({ data: docs })
 }
 
 export const createOne = model => async (req, res) => {
-  try {
-    const modelInstance = await model.create(req.body)
-    res.status(200).send(modelInstance)
-  } catch (error) {
-    res.status(400).send({
-      msg: 'Error occured',
-      error
-    })
+  const userId = req.user._id
+  const doc = await model.create({ name: req.body.name, createdBy: userId })
+  if (!doc) {
+    return res.status(500).end()
   }
+  return res.status(201).json({
+    data: {
+      name: doc.name,
+      createdBy: doc.createdBy
+    }
+  })
 }
 
 export const updateOne = model => async (req, res) => {
-  try {
-    const modelInstance = await model.findOneAndUpdate(req.body.id, {
-      name: req.body.name
-    })
-    res.status(200).send({
-      msg: 'Document updated',
-      model: modelInstance
-    })
-  } catch (error) {
-    res.status(400).send({
-      msg: 'Error occured while updating',
-      error
-    })
+  const doc = await model.findOneAndUpdate(
+    {
+      _id: req.params.id,
+      createdBy: req.user._id
+    },
+    req.body,
+    { new: true }
+  )
+  if (!doc) {
+    return res.status(404).end()
   }
+  return res.status(200).json({
+    data: doc
+  })
 }
 
 export const removeOne = model => async (req, res) => {
-  try {
-    const modelInstance = await model.findOneAndDelete({ id: req.body.id })
-    res.status(200).send({
-      msg: 'Document deleted',
-      model: modelInstance
-    })
-  } catch (error) {
-    res.status(400).send({
-      msg: 'Error occured while deleting',
-      error
-    })
+  const doc = await model.findOneAndDelete({
+    _id: req.params.id,
+    createdBy: req.user._id
+  })
+
+  if (!doc) {
+    return res.status(404).end()
   }
+
+  return res.status(200).json({
+    data: doc
+  })
 }
 
 export const crudControllers = model => ({
